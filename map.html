@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distance from you</title>
+<style>
+  :root {
+    --paper: #eef2f3; --grid: #b9c6cc; --ink: #1d2a30; --muted: #5b6b73;
+    --you: #14677a; --robot: #d9480f; --line: #cfd9de;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper: #172126; --grid: #3a4a52; --ink: #e6eef1; --muted: #93a5ad;
+            --you: #5cc4d8; --robot: #ff8a57; --line: #2c3a41; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 40px; background: var(--paper); color: var(--ink);
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 600px; margin: 0 auto; }
+  #headline { font-size: clamp(2rem, 8vw, 3rem); font-weight: 700; margin: 0; line-height: 1.1; }
+  #sub { margin: 6px 0 16px; color: var(--muted); min-height: 2.8em; line-height: 1.4; }
+  canvas { width: 100%; aspect-ratio: 1 / 1; display: block; border: 1px solid var(--line); border-radius: 6px; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 18px 0; }
+  dt { color: var(--muted); } dd { margin: 0; }
+  #warn { color: var(--robot); margin: 0 0 14px; min-height: 1.4em; }
+  fieldset { border: 1px solid var(--line); border-radius: 6px; padding: 12px; margin: 0; }
+  legend { padding: 0 6px; color: var(--muted); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  input { flex: 1 1 120px; min-width: 0; padding: 8px; border: 1px solid var(--grid); border-radius: 4px;
+          background: transparent; color: inherit; font: inherit; }
+  button { padding: 8px 12px; border: 1px solid var(--you); border-radius: 4px; background: transparent;
+           color: var(--you); font: inherit; cursor: pointer; }
+  button:hover { background: var(--you); color: var(--paper); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="headline">Set your position</h1>
+  <p id="sub"></p>
+  <canvas id="plot" aria-label="Plot of the robot's position relative to you"></canvas>
+  <dl>
+    <dt>Robot GPS</dt><dd id="robotStatus">Connecting</dd>
+    <dt>You</dt><dd id="meStatus">Not set</dd>
+  </dl>
+  <p id="warn"></p>
+  <fieldset>
+    <legend>Your position</legend>
+    <div class="row">
+      <button id="useDevice">Use this device's location</button>
+      <button id="useRobot">Use the robot's position</button>
+    </div>
+    <div class="row">
+      <input id="latIn" type="number" step="any" placeholder="Latitude">
+      <input id="lonIn" type="number" step="any" placeholder="Longitude">
+      <button id="setManual">Set</button>
+    </div>
+  </fieldset>
+</main>
+<script>
+const R = 6371000;
+const cv = document.getElementById("plot");
+const $ = id => document.getElementById(id);
+let me = null, robot = null, manual = false, geoNote = "", watchId = null;
+
+function offsets(a, b) {
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLon = (b.lon - a.lon) * Math.PI / 180;
+  const north = dLat * R;
+  const east = dLon * R * Math.cos(a.lat * Math.PI / 180);
+  return { east, north, dist: Math.hypot(east, north),
+           bearing: (Math.atan2(east, north) * 180 / Math.PI + 360) % 360 };
+}
+const fmt = d => d < 1000 ? d.toFixed(d < 10 ? 1 : 0) + " m" : (d / 1000).toFixed(2) + " km";
+const compass = b => ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"][Math.round(b / 45) % 8];
+
+function niceRange(d) {
+  const r = Math.max(d * 1.25, 10), p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p;
+}
+
+function draw(o) {
+  const css = cv.clientWidth, dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(css * dpr)) { cv.width = cv.height = Math.round(css * dpr); }
+  const ctx = cv.getContext("2d"), s = getComputedStyle(document.documentElement);
+  const grid = s.getPropertyValue("--grid"), you = s.getPropertyValue("--you"),
+        rob = s.getPropertyValue("--robot"), ink = s.getPropertyValue("--ink");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, css, css);
+  const c = css / 2, rad = c - 30, range = niceRange(o ? o.dist : 0), k = rad / range;
+  ctx.strokeStyle = grid; ctx.fillStyle = grid; ctx.lineWidth = 1; ctx.font = "12px system-ui, sans-serif";
+  [0.5, 1].forEach(f => {
+    ctx.beginPath(); ctx.arc(c, c, rad * f, 0, 2 * Math.PI); ctx.stroke();
+    ctx.fillText(fmt(range * f), c + 4, c - rad * f + 14);
+  });
+  ctx.beginPath(); ctx.moveTo(c, c - rad); ctx.lineTo(c, c + rad);
+  ctx.moveTo(c - rad, c); ctx.lineTo(c + rad, c); ctx.stroke();
+  ctx.fillStyle = ink; ctx.textAlign = "center"; ctx.fillText("N", c, 16); ctx.textAlign = "start";
+  ctx.fillStyle = you; ctx.beginPath(); ctx.arc(c, c, 6, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillText("You", c + 10, c + 16);
+  if (o) {
+    const x = c + o.east * k, y = c - o.north * k;
+    ctx.strokeStyle = rob; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(c, c); ctx.lineTo(x, y); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = rob; ctx.beginPath(); ctx.arc(x, y, 8, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillText("Robot", x + 12, y + 4);
+  }
+}
+
+function render() {
+  const live = robot && robot.fix && me;
+  const o = live ? offsets(me, robot) : null;
+  if (!me) {
+    $("headline").textContent = "Set your position";
+    $("sub").textContent = geoNote || "Waiting for this device's location.";
+  } else if (!robot || !robot.fix) {
+    $("headline").textContent = "Waiting for the robot's GPS";
+    $("sub").textContent = robot ? "No satellite fix yet. Try a spot with a clear view of the sky." : "Can't reach the robot.";
+  } else {
+    $("headline").textContent = fmt(o.dist) + " from you";
+    $("sub").textContent = Math.abs(o.east).toFixed(0) + " m " + (o.east >= 0 ? "east" : "west") + ", " +
+      Math.abs(o.north).toFixed(0) + " m " + (o.north >= 0 ? "north" : "south") +
+      ". The robot is to your " + compass(o.bearing) + " (bearing " + o.bearing.toFixed(0) + "°).";
+  }
+  $("robotStatus").textContent = !robot ? "Can't reach the robot" :
+    (robot.fix ? "Fix, " + robot.sats + " satellites, updated " + robot.age + " s ago" : "No fix, " + robot.sats + " satellites seen") +
+    (robot.simulated ? " (simulated data)" : "");
+  $("meStatus").textContent = !me ? "Not set" : me.source + (me.acc ? ", accuracy about " + Math.round(me.acc) + " m" : "");
+  $("warn").textContent = (o && me.acc && me.acc > o.dist) ?
+    "Your location accuracy is larger than this distance, so treat the reading as approximate." : "";
+  draw(o);
+}
+
+function startGeo() {
+  manual = false;
+  if (!window.isSecureContext) {
+    geoNote = "Browsers block device location on plain http pages. Set your position below instead.";
+    render(); return;
+  }
+  if (!navigator.geolocation) { geoNote = "This browser can't share its location."; render(); return; }
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  watchId = navigator.geolocation.watchPosition(p => {
+    if (manual) return;
+    me = { lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy, source: "This device's location" };
+    render();
+  }, e => { geoNote = "Location was not shared (" + e.message + "). Set your position below."; render(); },
+  { enableHighAccuracy: true, maximumAge: 5000 });
+}
+
+$("useDevice").onclick = startGeo;
+$("useRobot").onclick = () => {
+  if (robot && robot.fix) { manual = true; me = { lat: robot.lat, lon: robot.lon, acc: 0, source: "Robot's position when you tapped" }; render(); }
+};
+$("setManual").onclick = () => {
+  const lat = parseFloat($("latIn").value), lon = parseFloat($("lonIn").value);
+  if (isFinite(lat) && isFinite(lon)) { manual = true; me = { lat, lon, acc: 0, source: "Set by you" }; render(); }
+};
+
+async function poll() {
+  try { robot = await (await fetch("/gps", { cache: "no-store" })).json(); }
+  catch (e) { robot = null; }
+  render();
+}
+window.addEventListener("resize", render);
+startGeo(); poll(); setInterval(poll, 1000);
+</script>
+</body>
+</html>
