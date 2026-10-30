@@ -115,17 +115,14 @@ async function poll() {
   render();
 }
 
-const panel = $("gpsPanel");
-const setGps = open => {
-  panel.classList.toggle("open", open);
-  panel.inert = !open;
-  $("openGps").setAttribute("aria-expanded", open);
-  if (open) render();
-};
-$("openGps").onclick = () => setGps(!panel.classList.contains("open"));
-$("closeGps").onclick = () => setGps(false);
-document.addEventListener("keydown", e => { if (e.key === "Escape") setGps(false); });
-new ResizeObserver(render).observe(cv);   // redraws the plot while the panel slides
+const modal = $("gpsModal");
+const openGps = () => { modal.hidden = false; render(); };
+const closeGps = () => { modal.hidden = true; };
+$("openGps").onclick = openGps;
+$("closeGps").onclick = closeGps;
+modal.addEventListener("click", e => { if (e.target === modal) closeGps(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeGps(); });
+new ResizeObserver(render).observe(cv);   // keeps the plot sharp when the window resizes
 
 window.addEventListener("resize", render);
 startGeo();
