@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hexapod</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <div class="dashboard">
+        <div class="display-window">
+            <h2>Camera</h2>
+            <img src="{{ url_for('video_feed') }}" alt="Live Feed Target" class="feed">
+        </div>
+
+        <div class="display-window">
+            <h2>Distance from you</h2>
+            <div id="readout" class="readout">Set your position</div>
+            <p id="sub" class="sub"></p>
+            <canvas id="plot" aria-label="Plot of the robot's position relative to you"></canvas>
+            <dl class="status">
+                <dt>Robot GPS</dt><dd id="robotStatus">Connecting</dd>
+                <dt>You</dt><dd id="meStatus">Not set</dd>
+            </dl>
+            <p id="warn" class="warn"></p>
+            <div class="controls">
+                <button id="useDevice">Use this device's location</button>
+                <button id="useRobot">Use the robot's position</button>
+            </div>
+            <div class="controls">
+                <input id="latIn" type="number" step="any" placeholder="Latitude">
+                <input id="lonIn" type="number" step="any" placeholder="Longitude">
+                <button id="setManual">Set</button>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/gps_map.js') }}"></script>
+</body>
+</html>
