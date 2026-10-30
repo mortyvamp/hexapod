@@ -1,118 +1,57 @@
-html, body {
-    height: 100%;
-}
+:root { --panel-w: clamp(300px, 34vw, 440px); }
 
-body {
-    margin: 0;
-    background-color: #000000;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #ffffff;
-    overflow: hidden;
-}
-
-/* Camera fills the whole screen. "contain" keeps the full frame visible;
-   switch to "cover" if you'd rather fill the screen and crop the edges. */
-.feed {
-    position: fixed;
-    inset: 0;
+.layout {
+    display: flex;
     width: 100vw;
     height: 100vh;
     height: 100dvh;
-    object-fit: contain;
+}
+
+.stage {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
     background-color: #000000;
 }
 
-/* Floating button that opens the GPS window */
-.gps-chip {
-    position: fixed;
-    right: 20px;
-    bottom: 20px;
-    z-index: 10;
-    display: flex;
-    gap: 10px;
-    align-items: baseline;
-    padding: 10px 16px;
-    background-color: #2a2a35;
-    border: 1px solid #3f3f50;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    color: #4facfe;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.gps-chip:hover {
-    background-color: #34344a;
-}
-
-.chip-value {
-    color: #ffffff;
-    font-weight: 400;
-}
-
-.gps-chip:focus-visible,
-.close:focus-visible,
-.controls button:focus-visible,
-.controls input:focus-visible {
-    outline: 2px solid #4facfe;
-    outline-offset: 2px;
-}
-
-/* GPS window */
-.modal {
-    position: fixed;
-    inset: 0;
-    z-index: 20;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    background-color: rgba(0, 0, 0, 0.65);
-}
-
-.modal[hidden] {
-    display: none;
-}
-
-.display-window {
-    position: relative;
-    background-color: #2a2a35;
-    padding: 15px 30px 30px 30px;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    border: 1px solid #3f3f50;
-    width: min(560px, 100%);
-    max-height: 100%;
-    overflow-y: auto;
-    box-sizing: border-box;
-}
-
-.close {
+.feed {
     position: absolute;
-    top: 8px;
-    right: 12px;
-    background: none;
-    border: none;
-    color: #a0a0b5;
-    font-size: 1.6rem;
-    line-height: 1;
-    cursor: pointer;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;   /* "cover" fills the area and crops the edges */
 }
 
-.close:hover {
-    color: #ffffff;
+.gps-panel {
+    flex: 0 0 auto;
+    width: 0;
+    overflow: hidden;
+    background-color: #2a2a35;
+    border-left: 1px solid #3f3f50;
+    transition: width 0.3s ease;
+}
+.gps-panel.open { width: var(--panel-w); }
+
+.panel-inner {
+    position: relative;
+    box-sizing: border-box;
+    width: var(--panel-w);
+    height: 100%;
+    padding: 14px 18px 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 h2 {
-    margin-top: 0;
-    margin-bottom: 20px;
+    margin: 0 0 8px;
+    font-size: 1.1rem;
     color: #4facfe;
     text-align: center;
 }
 
 .readout {
-    font-size: 2rem;
+    font-size: clamp(1.3rem, 4.5vh, 1.9rem);
     font-weight: 700;
     text-align: center;
     line-height: 1.15;
@@ -121,16 +60,24 @@ h2 {
 .sub {
     color: #a0a0b5;
     text-align: center;
-    margin: 6px 0 14px;
-    min-height: 2.8em;
-    line-height: 1.4;
+    margin: 4px 0 8px;
+    font-size: 0.85rem;
+    line-height: 1.35;
+}
+
+.plot-wrap {
+    flex: 1 1 0;
+    min-height: 0;
+    container-type: size;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #plot {
-    width: min(100%, 52vh);
-    aspect-ratio: 1 / 1;
-    display: block;
-    margin: 0 auto;
+    width: 100cqmin;
+    height: 100cqmin;
+    box-sizing: border-box;
     background-color: #23232d;
     border: 1px solid #3f3f50;
     border-radius: 6px;
@@ -139,48 +86,15 @@ h2 {
 .status {
     display: grid;
     grid-template-columns: max-content 1fr;
-    gap: 6px 14px;
-    margin: 16px 0 8px;
+    gap: 3px 12px;
+    margin: 10px 0 4px;
+    font-size: 0.85rem;
 }
-
 .status dt { color: #a0a0b5; }
 .status dd { margin: 0; }
 
-.warn {
-    color: #ff8a57;
-    margin: 0 0 10px;
-    min-height: 1.4em;
-}
+.warn { color: #ff8a57; margin: 4px 0 0; font-size: 0.85rem; }
+.warn:empty { display: none; }
 
-.controls {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-}
-
-.controls input {
-    flex: 1 1 110px;
-    min-width: 0;
-    padding: 8px;
-    border: 1px solid #3f3f50;
-    border-radius: 4px;
-    background-color: #1e1e24;
-    color: #ffffff;
-    font: inherit;
-}
-
-.controls button {
-    padding: 8px 12px;
-    border: 1px solid #4facfe;
-    border-radius: 4px;
-    background: transparent;
-    color: #4facfe;
-    font: inherit;
-    cursor: pointer;
-}
-
-.controls button:hover {
-    background-color: #4facfe;
-    color: #1e1e24;
-}
+@media (max-height: 600px) { .sub { display: none; } }
+@media (prefers-reduced-motion: reduce) { .gps-panel { transition: none; } }
