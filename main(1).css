@@ -1,7 +1,3 @@
-:root {
-    --panel-w: clamp(300px, 34vw, 440px);
-}
-
 html, body {
     height: 100%;
 }
@@ -14,30 +10,21 @@ body {
     overflow: hidden;
 }
 
-.layout {
-    display: flex;
+/* Camera fills the whole screen. Change "contain" to "cover" to fill
+   the screen and crop the edges instead. */
+.feed {
+    position: fixed;
+    inset: 0;
     width: 100vw;
     height: 100vh;
     height: 100dvh;
-}
-
-.stage {
-    position: relative;
-    flex: 1 1 0;
-    min-width: 0;
+    object-fit: contain;
     background-color: #000000;
 }
 
-.feed {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
+/* Floating button that opens the GPS window */
 .gps-chip {
-    position: absolute;
+    position: fixed;
     right: 20px;
     bottom: 20px;
     z-index: 10;
@@ -64,28 +51,37 @@ body {
     font-weight: 400;
 }
 
-.gps-panel {
-    flex: 0 0 auto;
-    width: 0;
-    overflow: hidden;
-    background-color: #2a2a35;
-    border-left: 1px solid #3f3f50;
-    transition: width 0.3s ease;
-}
-
-.gps-panel.open {
-    width: var(--panel-w);
-}
-
-.panel-inner {
-    position: relative;
+/* GPS window: always fits the screen, never scrolls */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
     box-sizing: border-box;
-    width: var(--panel-w);
-    height: 100%;
-    padding: 14px 18px 16px;
+    background-color: rgba(0, 0, 0, 0.65);
+}
+
+.modal[hidden] {
+    display: none;
+}
+
+.display-window {
+    position: relative;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
+    width: min(560px, 100%);
+    height: min(780px, calc(100vh - 32px));
+    height: min(780px, calc(100dvh - 32px));
+    padding: 14px 24px 18px;
     overflow: hidden;
+    background-color: #2a2a35;
+    border: 1px solid #3f3f50;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .close {
@@ -106,13 +102,13 @@ body {
 
 h2 {
     margin: 0 0 8px;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     color: #4facfe;
     text-align: center;
 }
 
 .readout {
-    font-size: clamp(1.3rem, 4.5vh, 1.9rem);
+    font-size: clamp(1.4rem, 4.5vh, 2rem);
     font-weight: 700;
     text-align: center;
     line-height: 1.15;
@@ -126,6 +122,7 @@ h2 {
     line-height: 1.35;
 }
 
+/* The plot takes whatever height is left and stays square */
 .plot-wrap {
     flex: 1 1 0;
     min-height: 0;
@@ -208,8 +205,4 @@ h2 {
 
 @media (max-height: 600px) {
     .sub { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .gps-panel { transition: none; }
 }
