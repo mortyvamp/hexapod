@@ -7,34 +7,39 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
-    <img src="{{ url_for('video_feed') }}" alt="Live Feed Target" class="feed">
-
-    <button id="openGps" class="gps-chip" aria-haspopup="dialog">
-        <span>GPS map</span><span id="chip" class="chip-value"></span>
-    </button>
-
-    <div id="gpsModal" class="modal" hidden>
-        <div class="display-window" role="dialog" aria-label="Distance from you">
-            <button id="closeGps" class="close" aria-label="Close">&times;</button>
-            <h2>Distance from you</h2>
-            <div id="readout" class="readout">Set your position</div>
-            <p id="sub" class="sub"></p>
-            <canvas id="plot" aria-label="Plot of the robot's position relative to you"></canvas>
-            <dl class="status">
-                <dt>Robot GPS</dt><dd id="robotStatus">Connecting</dd>
-                <dt>You</dt><dd id="meStatus">Not set</dd>
-            </dl>
-            <p id="warn" class="warn"></p>
-            <div class="controls">
-                <button id="useDevice">Use this device's location</button>
-                <button id="useRobot">Use the robot's position</button>
-            </div>
-            <div class="controls">
-                <input id="latIn" type="number" step="any" placeholder="Latitude">
-                <input id="lonIn" type="number" step="any" placeholder="Longitude">
-                <button id="setManual">Set</button>
-            </div>
+    <div class="layout">
+        <div class="stage">
+            <img src="{{ url_for('video_feed') }}" alt="Live Feed Target" class="feed">
+            <button id="openGps" class="gps-chip" aria-controls="gpsPanel" aria-expanded="false">
+                <span>GPS map</span><span id="chip" class="chip-value"></span>
+            </button>
         </div>
+
+        <aside id="gpsPanel" class="gps-panel" aria-label="Distance from you" inert>
+            <div class="panel-inner">
+                <button id="closeGps" class="close" aria-label="Close">&times;</button>
+                <h2>Distance from you</h2>
+                <div id="readout" class="readout">Set your position</div>
+                <p id="sub" class="sub"></p>
+                <div class="plot-wrap">
+                    <canvas id="plot" aria-label="Plot of the robot's position relative to you"></canvas>
+                </div>
+                <dl class="status">
+                    <dt>Robot GPS</dt><dd id="robotStatus">Connecting</dd>
+                    <dt>You</dt><dd id="meStatus">Not set</dd>
+                </dl>
+                <p id="warn" class="warn"></p>
+                <div class="controls">
+                    <button id="useDevice">Use this device's location</button>
+                    <button id="useRobot">Use the robot's position</button>
+                </div>
+                <div class="controls">
+                    <input id="latIn" type="number" step="any" placeholder="Latitude">
+                    <input id="lonIn" type="number" step="any" placeholder="Longitude">
+                    <button id="setManual">Set</button>
+                </div>
+            </div>
+        </aside>
     </div>
     <script src="{{ url_for('static', filename='js/gps_map.js') }}"></script>
 </body>
